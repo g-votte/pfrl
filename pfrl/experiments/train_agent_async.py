@@ -7,8 +7,10 @@ from torch import nn
 import numpy as np
 
 from pfrl.experiments.evaluator import AsyncEvaluator
+from pfrl.experiments.evaluator import record_tb_stats_loop
 from pfrl.utils import async_
 from pfrl.utils import random_seed
+from pfrl.utils import StoppableThread
 import signal
 import subprocess
 import sys
@@ -246,6 +248,17 @@ def train_agent_async(
     if eval_interval is None:
         evaluator = None
     else:
+        if use_tensorboard:
+            tb_stats_queue = mp.Queue()
+            tb_writer = StoppableThread(
+                target=record_tb_stats_loop,
+                args=[outdir, tb_stats_queue, stop_event],
+                stop_event=stop_event,
+            )
+            tb_writer.start()
+        else:
+            tb_stats_queue = None
+
         evaluator = AsyncEvaluator(
             n_steps=eval_n_steps,
             n_episodes=eval_n_episodes,
@@ -254,7 +267,7 @@ def train_agent_async(
             max_episode_len=max_episode_len,
             step_offset=step_offset,
             save_best_so_far_agent=save_best_so_far_agent,
-            use_tensorboard=use_tensorboard,
+            tb_stats_queue=tb_stats_queue,
             logger=logger,
         )
 
