@@ -228,6 +228,9 @@ def main():
     else:
         # using impala mode when given num of envs
 
+        import multiprocessing as mp
+        mp.set_start_method("fork")
+
         # When we use multiple envs, it is critical to ensure each env
         # can occupy a CPU core to get the best performance.
         # Therefore, we need to prevent potential CPU over-provision caused by
