@@ -642,6 +642,30 @@ class DQN(agent.AttributeSavingMixin, agent.BatchAgent):
         exception_event: mp.synchronize.Event,
         n_updates: Optional[int] = None,
     ) -> None:
+        def f():
+            self._learner_loop_inner(
+                shared_model,
+                pipes,
+                replay_buffer_lock,
+                stop_event,
+                exception_event,
+                n_updates
+            )
+
+        import cProfile
+        cProfile.runctx(
+            "f()", globals(), locals(), "profile-learner.out"
+        )
+
+    def _learner_loop_inner(
+        self,
+        shared_model: torch.nn.Module,
+        pipes: Sequence[mp.connection.Connection],
+        replay_buffer_lock: mp.synchronize.Lock,
+        stop_event: mp.synchronize.Event,
+        exception_event: mp.synchronize.Event,
+        n_updates: Optional[int] = None,
+    ) -> None:
         try:
             update_counter = 0
             # To stop this loop, call stop_event.set()
